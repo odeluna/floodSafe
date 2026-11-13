@@ -9,6 +9,7 @@
 <ol id="list"></ol><a href="/" target="_top">Main page &rarr;</a></div>
 <script>
 const map=L.map('map').setView([30.05,-99.2],10);
+const API="http://localhost:8001";
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map);
 const C={flooded:'#d62728',caution:'#ff9f1c',clear:'#2ca02c',unknown:'#999'};
 let layer, fit=true;
