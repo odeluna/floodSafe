@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from ollama import Client
 
 # ---- Config -----------------------------------------------------------
-OLLAMA_HOST = "http://10.184.37.28:11434/"
+OLLAMA_HOST = "http://localhost:11434/"
 MODEL = "qwen3-vl:8b"
 MAX_TOKENS = 400       # lower = faster replies
 KEEP_ALIVE = "30m"     # keep the model loaded between questions
