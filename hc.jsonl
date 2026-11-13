@@ -1,0 +1,54 @@
+{"image_id": "HC003", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.7}
+{"image_id": "HC002", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "HC005", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.9}
+{"image_id": "HC004", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "HC001", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.8}
+{"image_id": "HC006", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.7}
+{"image_id": "HC008", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.7}
+{"image_id": "HC009", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "HC007", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.7}
+{"image_id": "HC010", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.7}
+{"image_id": "HC012", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC013", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC014", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC016", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC017", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.95}
+{"image_id": "HC015", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.7}
+{"image_id": "HC019", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.7}
+{"image_id": "HC020", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.9}
+{"image_id": "HC011", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC018", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.9}
+{"image_id": "HC023", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.95}
+{"image_id": "HC022", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.7}
+{"image_id": "HC025", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.95}
+{"image_id": "HC021", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC024", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.7}
+{"image_id": "HC028", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.9}
+{"image_id": "HC026", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.8}
+{"image_id": "HC029", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "HC031", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC030", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.7}
+{"image_id": "HC027", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.7}
+{"image_id": "HC032", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC034", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "HC035", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.8}
+{"image_id": "HC037", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.9}
+{"image_id": "HC036", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.6}
+{"image_id": "HC039", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 1.0}
+{"image_id": "HC033", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC040", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.8}
+{"image_id": "HC041", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC042", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC038", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC044", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC046", "mode": "single", "roads_flooded": "none", "passable": true, "confidence": 0.9}
+{"image_id": "HC045", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.7}
+{"image_id": "HC047", "mode": "single", "roads_flooded": "some", "passable": true, "confidence": 0.8}
+{"image_id": "HC043", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC050", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.8}
+{"image_id": "AF001", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.9}
+{"image_id": "AF002", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.9}
+{"image_id": "AF003", "mode": "single", "roads_flooded": "most", "passable": false, "confidence": 0.8}
+{"image_id": "HC048", "mode": "error", "error": "Request timed out."}
+{"image_id": "HC049", "mode": "error", "error": "Request timed out."}
+{"image_id": "AF004", "mode": "single", "roads_flooded": "some", "passable": false, "confidence": 0.3}
