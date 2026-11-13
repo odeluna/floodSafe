@@ -13,7 +13,7 @@ from ollama import Client
 # ---- Config -----------------------------------------------------------
 OLLAMA_HOST = "http://localhost:11434/"
 MODEL = "qwen3-vl:8b"
-MAX_TOKENS = 400       # lower = faster replies
+MAX_TOKENS = 4000       # lower = faster replies
 KEEP_ALIVE = "30m"     # keep the model loaded between questions
 NUM_CTX = 8192         # room for the data summary + question
 
