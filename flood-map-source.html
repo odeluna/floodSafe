@@ -98,7 +98,7 @@
             <feGaussianBlur stdDeviation="16"/>
           </filter>
         </defs>
-        <image href="san-antonio-road-map.jpg" width="757" height="753"/>
+        <image href="__IMG__" width="757" height="753"/>
         <g id="blobs" filter="url(#blur)"></g> <!-- blobs get drawn here by JavaScript -->
       </svg>
     </div>
@@ -229,7 +229,7 @@ function drawSidebar() {
     const item = document.createElement("li");
     item.innerHTML = `<button class="${selectedId === area.id ? "selected" : ""}">
         <span class="dot" style="background:${colorFor(score)}"></span>${area.name}
-        <span class="score">${Math.round(score * 12)}</span></button>`;
+        <span class="score">${Math.round(score * 100)}</span></button>`;
     item.firstChild.onclick = () => selectArea(area.id);
     listEl.appendChild(item);
   });
@@ -237,7 +237,7 @@ function drawSidebar() {
   const picked = areas.find(a => a.id === selectedId);
   if (picked) {
     const score = getSeverity(picked);
-    detailEl.innerHTML = `<span class="tag" style="background:${colorFor(score)}">${labelFor(score)} · ${Math.round(score * 12)}/12</span>
+    detailEl.innerHTML = `<span class="tag" style="background:${colorFor(score)}">${labelFor(score)} · ${Math.round(score * 100)}/100</span>
                           <b>${picked.name}</b>${picked.note}`;
   }
 }
