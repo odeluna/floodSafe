@@ -94,7 +94,8 @@ FloodSafe uses flood-related datasets provided for the competition, including da
 
 - **Harris Goolsby** — Frontend Development
 - **Cristian Mazzotta** — Backend Development
-- **John Delgado** — Product Management, Research, Presentation Design, Data Analysis (Data Processing, Data Validation, and Analytics)
+- **John Delgado** — Product Management
+- **Olivia De Luna** — Data Analysis
 
 ## Potential Impact
 
