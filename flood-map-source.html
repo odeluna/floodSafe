@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>San Antonio Flood Impact Map</title>
+
+<style>
+  /* ============ 1. COLORS (edit these to re-theme the page) ============ */
+  :root {
+    --bg: #f4f6f8;      /* page background */
+    --card: #ffffff;    /* panel background */
+    --text: #14202b;    /* main text */
+    --mute: #5b6b7a;    /* secondary text */
+    --line: #d9e0e6;    /* borders */
+    --acc: #0b63c5;     /* accent (selected items, sliders) */
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Dark mode: same variables, darker values */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e141a; --card: #17202a; --text: #e8eef4;
+      --mute: #93a3b3; --line: #2a3846; --acc: #5aa9ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e141a; --card: #17202a; --text: #e8eef4;
+    --mute: #93a3b3; --line: #2a3846; --acc: #5aa9ff;
+  }
+
+  /* ============ 2. LAYOUT ============ */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; color: var(--mute); font-size: 14px; }
+
+  /* Two columns: map on the left, sidebar on the right (stacks on phones) */
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px;
+         padding: 16px; max-width: 1200px; margin: auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+
+  /* ============ 3. MAP ============ */
+  .map-wrap { border-radius: 10px; overflow: hidden; line-height: 0; }
+  svg { width: 100%; height: auto; display: block; }
+  .blob { cursor: pointer; transition: opacity .2s; }
+  .blob:hover { opacity: 1 !important; }
+
+  /* ============ 4. CONTROLS, LEGEND, STATUS ============ */
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px;
+              font-size: 13px; color: var(--mute); align-items: center; }
+  .controls label { display: flex; gap: 8px; align-items: center; }
+  input[type=range] { accent-color: var(--acc); }
+  button.action { background: var(--acc); color: #fff; border: 0; border-radius: 8px;
+                  padding: 6px 12px; font: inherit; cursor: pointer; }
+  .legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--mute); margin-top: 12px; }
+  .legend-bar { flex: 1; height: 10px; border-radius: 6px;
+                background: linear-gradient(90deg, hsl(120,70%,45%), hsl(60,90%,50%), hsl(30,95%,50%), hsl(0,85%,48%)); }
+  #status { margin-top: 10px; font-size: 12px; color: var(--mute); }
+
+  /* ============ 5. SIDEBAR ============ */
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  li button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+              background: transparent; color: var(--text); border: 1px solid var(--line);
+              border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; cursor: pointer; }
+  li button:hover, li button.selected { border-color: var(--acc); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .score { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--mute); font-size: 13px; }
+  #detail { margin-top: 12px; font-size: 14px; line-height: 1.45; }
+  #detail b { display: block; font-size: 16px; margin-bottom: 2px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #111; margin-bottom: 6px; }
+</style>
+</head>
+
+<body>
+<!-- ================= PAGE STRUCTURE ================= -->
+<header>
+  <h1>San Antonio Flood Impact Map</h1>
+  <p>Northwest San Antonio · predicted flood severity by area</p>
+</header>
+
+<main>
+  <!-- LEFT: the map -->
+  <section class="card">
+    <div class="map-wrap">
+      <!-- The SVG is the same size as the map image (757 x 753), so blob
+           coordinates below are just pixel positions on the image. -->
+      <svg id="map" viewBox="0 0 757 753" role="img" aria-label="Flood heat map over a road map of northwest San Antonio">
+        <defs>
+          <!-- Blur makes the ellipses look like soft heat-map blobs. Raise stdDeviation for softer. -->
+          <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="16"/>
+          </filter>
+        </defs>
+        <image href="san-antonio-road-map.jpg" width="757" height="753"/>
+        <g id="blobs" filter="url(#blur)"></g> <!-- blobs get drawn here by JavaScript -->
+      </svg>
+    </div>
+
+    <div class="controls">
+      <label>Rainfall scenario (sample data only)
+        <input id="rainSlider" type="range" min="1" max="10" value="5">
+        <span id="rainLabel">5 in</span>
+      </label>
+      <label>Overlay opacity
+        <input id="opacitySlider" type="range" min="20" max="100" value="75">
+      </label>
+      <label><input id="toggleHeat" type="checkbox" checked> Show heat map</label>
+      <button class="action" id="refreshBtn">Refresh data</button>
+    </div>
+
+    <div class="legend"><span>Low</span><div class="legend-bar"></div><span>Severe</span></div>
+    <div id="status">Data source: sample data</div>
+  </section>
+
+  <!-- RIGHT: ranked list + details -->
+  <aside class="card">
+    <h2>Most affected areas</h2>
+    <ol id="areaList"></ol>
+    <div id="detail">Select an area to see details.</div>
+  </aside>
+</main>
+
+<script>
+/* =====================================================================
+   A. API SETTINGS  <-- START HERE when connecting real flood data
+   ===================================================================== */
+const CONFIG = {
+  API_URL: "",          // e.g. "https://your-server.com/api/flood-risk". Leave "" for no API.
+  API_KEY: "",          // optional. Sent as "Authorization: Bearer <key>"
+  REFRESH_SECONDS: 0,   // 0 = fetch once on load. 60 = re-fetch every minute.
+  USE_MOCK_API: true    // true = fake random data so you can test the live-update flow.
+                        // Set to false once API_URL is filled in.
+};
+
+/* Turn whatever your API returns into { areaId: score }, score from 0 to 1
+   (0 = no flooding, 1 = worst). EDIT THIS to match your teammate's format.
+
+   Default expected format:
+     { "areas": { "leon": 0.9, "utsa": 0.2, "helotes": 0.1 } }
+
+   If the API returns a list instead, e.g.
+     [ { "zone": "leon", "risk": 90 }, ... ]
+   change the body to something like:
+     const out = {};
+     json.forEach(item => out[item.zone] = item.risk / 100);
+     return out;                                                       */
+function parseApiResponse(json) {
+  return json.areas;
+}
+
+/* =====================================================================
+   B. AREAS ON THE MAP
+   x, y   = center of the blob in image pixels (map is 757 wide, 753 tall)
+   rx, ry = blob radius (horizontal / vertical)
+   base   = sample severity 0-1 (used only until real data arrives)
+   id     = the key your API must use for this area
+   ===================================================================== */
+const areas = [
+  { id: "leon",    name: "Leon Creek corridor",             x: 265, y: 330, rx: 55, ry: 120, base: 0.95, note: "Low-lying creek channel; runoff concentrates here first." },
+  { id: "olmos",   name: "Olmos Creek / Shavano Park",      x: 640, y: 210, rx: 85, ry: 70,  base: 0.80, note: "Creek bends and dense pavement raise flash-flood risk." },
+  { id: "leonv",   name: "Leon Valley",                     x: 390, y: 610, rx: 75, ry: 60,  base: 0.75, note: "Downstream of Leon Creek; water accumulates." },
+  { id: "apache",  name: "Apache Creek / Balcones Heights", x: 545, y: 700, rx: 80, ry: 45,  base: 0.70, note: "Drainage near the I-410 interchange." },
+  { id: "med",     name: "South Texas Medical Center",      x: 505, y: 480, rx: 60, ry: 55,  base: 0.45, note: "Large impervious surface area; moderate ponding risk." },
+  { id: "utsa",    name: "UTSA / Babcock Rd",               x: 325, y: 135, rx: 60, ry: 45,  base: 0.35, note: "Campus drainage handles most moderate rain." },
+  { id: "helotes", name: "Helotes",                         x: 60,  y: 175, rx: 50, ry: 55,  base: 0.20, note: "Higher ground; lower relative risk." }
+];
+
+/* =====================================================================
+   C. STATE (values that change while the page is running)
+   ===================================================================== */
+let liveScores = {};        // scores from the API, keyed by area id
+let selectedId = null;      // which area is clicked
+let rainInches = 5;         // rainfall slider (sample data only)
+
+/* Grab page elements once so the code below stays readable */
+const $ = id => document.getElementById(id);
+const blobLayer = $("blobs"), listEl = $("areaList"), detailEl = $("detail"), statusEl = $("status");
+
+/* =====================================================================
+   D. SCORING + COLOR HELPERS
+   ===================================================================== */
+/* Severity for one area: live API score if we have one, else the sample formula */
+function getSeverity(area) {
+  if (liveScores[area.id] != null) return liveScores[area.id];
+  return Math.min(1, area.base * (0.35 + (rainInches / 10) * 0.75));
+}
+/* 0 -> green (hue 120), 1 -> red (hue 0) */
+function colorFor(score) { return `hsl(${Math.round(120 * (1 - score))}, 85%, 48%)`; }
+/* Word label for a score */
+function labelFor(score) {
+  if (score > 0.75) return "Severe";
+  if (score > 0.5)  return "High";
+  if (score > 0.3)  return "Moderate";
+  return "Low";
+}
+
+/* =====================================================================
+   E. DRAWING
+   ===================================================================== */
+function drawBlobs() {
+  blobLayer.innerHTML = "";
+  areas.forEach(area => {
+    const score = getSeverity(area);
+    const blob = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    const grow = 0.8 + score * 0.5;                  // worse areas get bigger blobs
+    blob.setAttribute("cx", area.x);
+    blob.setAttribute("cy", area.y);
+    blob.setAttribute("rx", area.rx * grow);
+    blob.setAttribute("ry", area.ry * grow);
+    blob.setAttribute("fill", colorFor(score));
+    blob.setAttribute("class", "blob");
+    blob.style.opacity = selectedId === area.id ? 1 : $("opacitySlider").value / 100;
+    blob.addEventListener("click", () => selectArea(area.id));
+    blobLayer.appendChild(blob);
+  });
+}
+
+function drawSidebar() {
+  listEl.innerHTML = "";
+  [...areas].sort((a, b) => getSeverity(b) - getSeverity(a)).forEach(area => {   // worst first
+    const score = getSeverity(area);
+    const item = document.createElement("li");
+    item.innerHTML = `<button class="${selectedId === area.id ? "selected" : ""}">
+        <span class="dot" style="background:${colorFor(score)}"></span>${area.name}
+        <span class="score">${Math.round(score * 12)}</span></button>`;
+    item.firstChild.onclick = () => selectArea(area.id);
+    listEl.appendChild(item);
+  });
+
+  const picked = areas.find(a => a.id === selectedId);
+  if (picked) {
+    const score = getSeverity(picked);
+    detailEl.innerHTML = `<span class="tag" style="background:${colorFor(score)}">${labelFor(score)} · ${Math.round(score * 12)}/12</span>
+                          <b>${picked.name}</b>${picked.note}`;
+  }
+}
+
+function redraw() { drawBlobs(); drawSidebar(); }
+function selectArea(id) { selectedId = id; redraw(); }
+
+/* =====================================================================
+   F. LOADING DATA FROM THE API
+   ===================================================================== */
+async function loadFloodData() {
+  try {
+    let json;
+    if (CONFIG.USE_MOCK_API) {
+      // Fake response so you can test without a real API
+      json = { areas: {} };
+      areas.forEach(a => json.areas[a.id] = Math.random());
+    } else if (CONFIG.API_URL) {
+      const headers = CONFIG.API_KEY ? { Authorization: "Bearer " + CONFIG.API_KEY } : {};
+      const res = await fetch(CONFIG.API_URL, { headers });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      json = await res.json();
+    } else {
+      statusEl.textContent = "Data source: sample data (no API configured)";
+      return;
+    }
+    liveScores = parseApiResponse(json);        // <-- your format adapter (section A)
+    statusEl.textContent = (CONFIG.USE_MOCK_API ? "Data source: mock API" : "Data source: live API")
+                           + " · updated " + new Date().toLocaleTimeString();
+    redraw();
+  } catch (err) {
+    console.error("Flood data error:", err);
+    statusEl.textContent = "Could not load API data (" + err.message + "); showing last known values.";
+  }
+}
+
+/* Other code can also push data directly: updateFloodData({ leon: 0.9, utsa: 0.2 }) */
+window.updateFloodData = scores => { Object.assign(liveScores, scores); redraw(); };
+
+/* =====================================================================
+   G. BUTTONS AND SLIDERS
+   ===================================================================== */
+$("rainSlider").oninput = e => {
+  rainInches = +e.target.value;
+  $("rainLabel").textContent = rainInches + " in";
+  redraw();
+};
+$("opacitySlider").oninput = redraw;
+$("toggleHeat").onchange = e => blobLayer.style.display = e.target.checked ? "" : "none";
+$("refreshBtn").onclick = loadFloodData;
+
+/* =====================================================================
+   H. START UP
+   ===================================================================== */
+redraw();
+if (CONFIG.USE_MOCK_API || CONFIG.API_URL) loadFloodData();
+if (CONFIG.REFRESH_SECONDS > 0) setInterval(loadFloodData, CONFIG.REFRESH_SECONDS * 1000);
+</script>
+</body>
+</html>
