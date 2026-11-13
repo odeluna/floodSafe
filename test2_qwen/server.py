@@ -18,11 +18,12 @@ KEEP_ALIVE = "30m"     # keep the model loaded between questions
 NUM_CTX = 8192         # room for the data summary + question
 
 BASE = Path(__file__).parent
-DATASETS = {           # label shown to the model -> results file
-    "Hurricane Harvey (2017)": BASE / "harvey.jsonl",
-    "Hill Country floods (Jul 2025)": BASE / "hc.jsonl",
-}
-MAX_LISTED_RECORDS = 120   # list every image only for small datasets
+DATA_DIR = BASE            # every *.jsonl file in this folder is loaded automatically
+LABELS = {                 # optional nicer names; key = the start of the file name
+    "harvey": "Hurricane Harvey (2017)",
+    "hc": "Hill Country floods (Jul 2025)",
+}                          # files not listed here are named from their file name
+MAX_LISTED_RECORDS = 120   # images listed one-by-one across ALL files (rest are summarized)
 # -----------------------------------------------------------------------
 
 client = Client(host=OLLAMA_HOST)
@@ -48,18 +49,40 @@ def read_jsonl(path):
                 rows.append(json.loads(line))
             except json.JSONDecodeError:
                 pass  # half-written last line while the GB10 is still appending
-    return rows
+    return dedupe(rows)
+
+
+def dedupe(rows):
+    """One row per image_id. A retry that succeeded replaces the earlier timeout row."""
+    best = {}
+    for r in rows:
+        iid = r.get("image_id")
+        if iid in best and is_ok(best[iid]) and not is_ok(r):
+            continue  # keep the good result over a later failure
+        best[iid] = r
+    return list(best.values())
+
+
+def label_for(path):
+    stem = path.stem
+    for key, label in LABELS.items():
+        if stem == key or stem.startswith(key + "_"):
+            return label
+    return stem.replace("_", " ").replace("-", " ").title()
 
 
 def get_datasets():
-    """Re-reads the files whenever they change, so new results appear automatically."""
-    sig = tuple(
-        (p.stat().st_mtime, p.stat().st_size) if p.exists() else None
-        for p in DATASETS.values()
-    )
+    """Loads every *.jsonl in DATA_DIR; re-reads when files change or new ones appear."""
+    files = sorted(DATA_DIR.glob("*.jsonl"))
+    sig = tuple((str(p), p.stat().st_mtime, p.stat().st_size) for p in files if p.exists())
     if sig != _cache["sig"]:
-        _cache["datasets"] = {name: read_jsonl(p) for name, p in DATASETS.items()}
-        _cache["sig"] = sig
+        data = {}
+        for p in files:
+            name = label_for(p)
+            if name in data:                     # two files with the same label
+                name = f"{name} [{p.stem}]"
+            data[name] = read_jsonl(p)
+        _cache["datasets"], _cache["sig"] = data, sig
     return _cache["datasets"]
 
 
@@ -72,7 +95,7 @@ def is_ok(r):
     return r.get("mode") != "error" and r.get("passable") is not None
 
 
-def summarize(name, rows):
+def summarize(name, rows, list_all):
     ok = [r for r in rows if is_ok(r)]
     lines = [
         f"## {name}",
@@ -104,7 +127,7 @@ def summarize(name, rows):
             n = sum(1 for r in rs if r["passable"] is False)
             lines.append(f"  {d}: {len(rs)} images, {n} not passable ({pct(n, len(rs))})")
 
-    if len(rows) <= MAX_LISTED_RECORDS:
+    if list_all:
         lines.append("Every analyzed image:")
         for r in ok:
             lines.append(
@@ -114,13 +137,13 @@ def summarize(name, rows):
     return "\n".join(lines)
 
 
-def records_for_question(question, datasets):
+def records_for_question(question, datasets, listed):
     """If the question names an image id or tile coordinates, include those records."""
     q = question.lower()
     coords = re.findall(r"\d{5}_\d{5}", q)
     hits = []
     for name, rows in datasets.items():
-        if len(rows) <= MAX_LISTED_RECORDS:
+        if name in listed:
             continue  # already listed in full
         for r in rows:
             iid = r.get("image_id", "")
@@ -138,10 +161,21 @@ def records_for_question(question, datasets):
     return ("Records matching the question:\n" + "\n".join(lines)) if lines else ""
 
 
+def pick_listed(datasets):
+    """Smallest files first: list their images one-by-one until the shared budget runs out."""
+    listed, budget = set(), MAX_LISTED_RECORDS
+    for name, rows in sorted(datasets.items(), key=lambda kv: len(kv[1])):
+        if len(rows) <= budget:
+            listed.add(name)
+            budget -= len(rows)
+    return listed
+
+
 def build_context(question):
     datasets = get_datasets()
-    parts = [summarize(name, rows) for name, rows in datasets.items()]
-    extra = records_for_question(question, datasets)
+    listed = pick_listed(datasets)
+    parts = [summarize(name, rows, name in listed) for name, rows in datasets.items()]
+    extra = records_for_question(question, datasets, listed)
     if extra:
         parts.append(extra)
     return "\n\n".join(parts)
