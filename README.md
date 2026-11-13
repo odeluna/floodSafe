@@ -2,6 +2,8 @@
 
 Current flood alerts tell people what is happening. FloodSafe helps people decide what to do next.
 
+https://canva.link/4xjoj7ytnd3u3wn
+
 ## Overview
 
 FloodSafe is a flood-awareness and decision-support platform designed to help users better understand flood conditions in their area. By combining flood datasets, dynamic risk visualizations, and an AI-powered assistant, FloodSafe transforms complex flood information into accessible, actionable insights.
