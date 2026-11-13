@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>San Antonio Flood Impact Map</title>
+
+<style>
+  /* ============ 1. COLORS (edit these to re-theme the page) ============ */
+  :root {
+    --bg: #f4f6f8;      /* page background */
+    --card: #ffffff;    /* panel background */
+    --text: #14202b;    /* main text */
+    --mute: #5b6b7a;    /* secondary text */
+    --line: #d9e0e6;    /* borders */
+    --acc: #0b63c5;     /* accent (buttons, links) */
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Dark mode: same variables, darker values */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e141a; --card: #17202a; --text: #e8eef4;
+      --mute: #93a3b3; --line: #2a3846; --acc: #5aa9ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e141a; --card: #17202a; --text: #e8eef4;
+    --mute: #93a3b3; --line: #2a3846; --acc: #5aa9ff;
+  }
+
+  /* ============ 2. LAYOUT ============ */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 10px; color: var(--mute); font-size: 14px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  main { padding: 16px; max-width: 1200px; margin: auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  button.action { background: var(--acc); color: #fff; border: 0; border-radius: 8px;
+                  padding: 6px 12px; font: inherit; cursor: pointer; }
+  button.action:disabled { opacity: .6; cursor: default; }
+
+  /* ============ 3. MEASURED MAP (embedded map.html) ============ */
+  .measured p { margin: 0 0 10px; color: var(--mute); font-size: 13px; }
+  .measured a { color: var(--acc); }
+  .measured iframe { width: 100%; height: 75vh; min-height: 560px; border: 0; border-radius: 10px; display: block; }
+
+  /* ============ 4. RAIN AI CHAT ============ */
+  .chat-panel { max-width: 520px; margin-top: 12px; padding: 14px; border: 1px solid var(--line);
+                border-radius: 10px; background: var(--card); }
+  .chat-panel[hidden] { display: none; }
+  .chat-panel h2 { margin-bottom: 8px; }
+  .chat-response { min-height: 48px; margin-bottom: 10px; padding: 10px; border: 1px solid var(--line);
+                   border-radius: 8px; color: var(--mute); font-size: 14px; line-height: 1.45; white-space: pre-wrap; }
+  .chat-input-row { display: flex; gap: 8px; }
+  #rain_ai_question { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line);
+                      border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+                     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+</style>
+</head>
+
+<body>
+<!-- ================= PAGE STRUCTURE ================= -->
+<header>
+  <h1>San Antonio Flood Impact Map</h1>
+  <p>Measured road passability from real Hill Country and Hurricane Harvey aerial imagery</p>
+  <button class="action" id="rain_ai_toggle" type="button" aria-expanded="false" aria-controls="rain_ai_panel">
+    Ask Rain AI
+  </button>
+  <section class="chat-panel" id="rain_ai_panel" aria-labelledby="rain_ai_heading" hidden>
+    <h2 id="rain_ai_heading">Ask about the measured flood data</h2>
+    <div class="chat-response" id="rain_ai_responce" role="status" aria-live="polite">
+      Answers come only from the measured aerial-imagery results. Analysis is still running, so numbers are partial.
+    </div>
+    <div class="chat-input-row">
+      <label class="visually-hidden" for="rain_ai_question">Your question</label>
+      <input id="rain_ai_question" type="text" placeholder="e.g. Which area had the most impassable roads?" autocomplete="off">
+      <button class="action" id="rain_ai_send" type="button">Send</button>
+    </div>
+  </section>
+</header>
+
+<main>
+  <!-- measured results (map.html served by the backend at /measured) -->
+  <section class="card measured">
+    <h2>Measured road passability</h2>
+    <p>Real aerial imagery analyzed by Qwen3-VL on the Dell GB10. Click a tile to see the image it was judged from.
+       <a href="/measured" target="_blank" rel="noopener">Open full screen</a></p>
+    <iframe src="/measured" title="Measured flood map from aerial imagery"></iframe>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   A. SETTINGS
+   ===================================================================== */
+const CONFIG = {
+  CHAT_API_URL: "/api/ask"   // Backend chat endpoint; answers from the measured data.
+};
+
+const $ = id => document.getElementById(id);
+
+/* =====================================================================
+   B. RAIN AI CHAT
+   Sends { question } to the backend; shows the reply text.
+   (Element id "rain_ai_responce" is spelled that way in the HTML on purpose.)
+   ===================================================================== */
+async function askRainAI() {
+  const questionInput = $("rain_ai_question");
+  const responseEl = $("rain_ai_responce");
+  const sendButton = $("rain_ai_send");
+  const question = questionInput.value.trim();
+
+  if (!question) {
+    responseEl.textContent = "Enter a question before sending.";
+    questionInput.focus();
+    return;
+  }
+
+  sendButton.disabled = true;
+  responseEl.textContent = "Waiting for Rain AI...";
+  try {
+    const res = await fetch(CONFIG.CHAT_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const text = json.response ?? json.answer;
+    if (typeof text !== "string") throw new Error("Unexpected chat API response.");
+    responseEl.textContent = text;
+  } catch (err) {
+    console.error("Rain AI error:", err);
+    responseEl.textContent = "Could not get a response from Rain AI (" + err.message + ").";
+  } finally {
+    sendButton.disabled = false;
+  }
+}
+
+/* =====================================================================
+   C. BUTTONS
+   ===================================================================== */
+$("rain_ai_send").onclick = askRainAI;
+$("rain_ai_question").onkeydown = e => { if (e.key === "Enter") askRainAI(); };
+$("rain_ai_toggle").onclick = e => {
+  const panel = $("rain_ai_panel");
+  panel.hidden = !panel.hidden;
+  e.currentTarget.setAttribute("aria-expanded", String(!panel.hidden));
+};
+</script>
+</body>
+</html>

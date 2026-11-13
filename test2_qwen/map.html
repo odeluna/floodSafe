@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><title>FloodSafe: Measured Impact</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>body{margin:0;font-family:system-ui}#map{height:100vh}
+.box{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;color:#111;padding:10px 12px;border-radius:8px;width:290px;max-height:90vh;overflow:auto;font-size:13px;box-shadow:0 2px 8px #0003}</style></head>
+<body><div id="map"></div>
+<div class="box"><b>Road passability, measured from aerial imagery</b><br>
+<select id="ev"><option value="hill">Hill Country floods (Jul 2025)</option><option value="harvey">Hurricane Harvey (2017)</option><option value="">All</option></select>
+<ol id="list"></ol><a href="/" target="_top">Main page &rarr;</a></div>
+<script>
+const map=L.map('map').setView([30.05,-99.2],10);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(map);
+const C={flooded:'#d62728',caution:'#ff9f1c',clear:'#2ca02c',unknown:'#999'};
+let layer, fit=true;
+async function load(){
+  const ev=document.getElementById('ev').value;
+  const g=await (await fetch('/flood-map'+(ev?'?event='+ev:''))).json();
+  if(layer) map.removeLayer(layer);
+  layer=L.geoJSON(g,{style:f=>({color:C[f.properties.status],weight:1,fillOpacity:.55}),
+    onEachFeature:(f,l)=>{const p=f.properties;l.bindPopup(
+      `<b>${p.locality}</b><br>${p.status}${p.confidence!=null?' (conf '+p.confidence+')':''}<br>3-day rain: ${p.preceding_3d_precipitation_mm} mm<br><img src="/${p.image_path}" width="230">`)}}).addTo(map);
+  if(fit && g.features.length){map.fitBounds(layer.getBounds()); fit=false;}
+  const a=await (await fetch('/api/areas')).json();
+  document.getElementById('list').innerHTML=Object.values(a)
+    .filter(v=>!ev||v.event.toLowerCase().includes(ev))
+    .sort((x,y)=>(y.impassable_pct??-1)-(x.impassable_pct??-1))
+    .map(v=>`<li>${v.name}: ${v.impassable_pct==null?'pending':Math.round(v.impassable_pct*100)+'% impassable'} <small>(${v.analyzed}/${v.tiles})</small></li>`).join('');
+}
+document.getElementById('ev').onchange=()=>{fit=true;load()};
+load(); setInterval(load,30000);
+</script></body></html>
